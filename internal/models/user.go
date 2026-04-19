@@ -11,6 +11,7 @@ type User struct {
 	BaseModel
 
 	Email        string `gorm:"type:varchar(255);uniqueIndex;not null"`
+	Username     string `gorm:"type:varchar(255);uniqueIndex"`
 	PasswordHash string `gorm:"type:varchar(255);not null"`
 	Name         string `gorm:"type:varchar(255)"`
 	IsActive     bool   `gorm:"default:true"`

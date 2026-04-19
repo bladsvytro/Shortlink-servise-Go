@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pet SSL - Сокращение ссылок</title>
+    <title>URL Shortener Service</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -11,46 +11,66 @@
 <body>
     <div class="container">
         <header>
-            <div class="logo">
-                <i class="fas fa-link"></i>
-                <h1>Pet SSL</h1>
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <h1>URL Shortener Service</h1>
+                </div>
+                <p class="tagline">Fast and secure URL shortening</p>
             </div>
-            <p class="tagline">Быстрое и безопасное сокращение ссылок</p>
+            <nav class="user-nav">
+                <div class="language-switcher">
+                    <button id="lang-ru" class="lang-btn active" data-lang="ru">RU</button>
+                    <button id="lang-en" class="lang-btn" data-lang="en">EN</button>
+                </div>
+                <div id="user-info" style="display: none;">
+                    <span id="user-email"></span>
+                    <button id="logout-btn" class="btn-outline small">Logout</button>
+                    <button id="admin-panel-btn" class="btn-outline small" style="display: none;">Admin Panel</button>
+                </div>
+                <div id="auth-buttons">
+                    <button id="login-btn" class="btn-outline small">Sign In</button>
+                    <button id="register-btn" class="btn-outline small">Sign Up</button>
+                </div>
+            </nav>
         </header>
 
         <main>
             <div class="main-content">
                 <div class="card main-form">
-                    <h2><i class="fas fa-compress-alt"></i> Сократить ссылку</h2>
+                    <h2><i class="fas fa-compress-alt"></i> Shorten URL</h2>
                     <div class="form-group">
-                        <label for="url">Введите URL:</label>
-                        <input type="url" id="url" placeholder="https://example.com/длинный-путь-к-странице" required>
+                        <label for="url">Enter URL:</label>
+                        <input type="url" id="url" placeholder="https://example.com/very-long-path" required>
                     </div>
                     <div class="form-group">
-                        <label for="title">Название (необязательно):</label>
-                        <input type="text" id="title" placeholder="Моя ссылка">
+                        <label for="title">Title (optional):</label>
+                        <input type="text" id="title" placeholder="My link">
                     </div>
                     <div class="form-group">
-                        <label for="custom">Пользовательский код (необязательно):</label>
+                        <label for="custom">Custom code (optional):</label>
                         <input type="text" id="custom" placeholder="my-link">
+                        <div class="preview-url" id="preview-url" style="margin-top: 8px; font-size: 0.9rem; color: #6b7280; display: none;">
+                            <strong>Preview:</strong> <span id="preview-text">http://localhost:8080/</span><span id="preview-code"></span>
+                        </div>
                     </div>
                     <button id="shorten-btn" class="btn-primary">
-                        <i class="fas fa-magic"></i> Сократить
+                        <i class="fas fa-magic"></i> Shorten
                     </button>
                     <div class="result" id="result" style="display: none;">
-                        <h3><i class="fas fa-check-circle"></i> Ссылка создана!</h3>
+                        <h3><i class="fas fa-check-circle"></i> Link created!</h3>
                         <div class="shortened-url">
                             <input type="text" id="short-url" readonly>
                             <button id="copy-btn" class="btn-secondary">
-                                <i class="far fa-copy"></i> Копировать
+                                <i class="far fa-copy"></i> Copy
                             </button>
                         </div>
-                        <p class="stats">Ссылка готова к использованию</p>
+                        <p class="stats">Link is ready to use</p>
                     </div>
                 </div>
 
                 <div class="card stats-card">
-                    <h2><i class="fas fa-chart-line"></i> Статистика</h2>
+                    <h2><i class="fas fa-chart-line"></i> Statistics</h2>
                     <div class="stats-container">
                         <div class="stat-item">
                             <div class="stat-icon">
@@ -58,7 +78,7 @@
                             </div>
                             <div class="stat-info">
                                 <div class="stat-value" id="total-links">0</div>
-                                <div class="stat-label">Всего ссылок</div>
+                                <div class="stat-label">Total Links</div>
                             </div>
                         </div>
                         <div class="stat-item">
@@ -67,7 +87,7 @@
                             </div>
                             <div class="stat-info">
                                 <div class="stat-value" id="total-clicks">0</div>
-                                <div class="stat-label">Всего кликов</div>
+                                <div class="stat-label">Total Clicks</div>
                             </div>
                         </div>
                         <div class="stat-item">
@@ -76,14 +96,14 @@
                             </div>
                             <div class="stat-info">
                                 <div class="stat-value" id="today-clicks">0</div>
-                                <div class="stat-label">Кликов сегодня</div>
+                                <div class="stat-label">Today's Clicks</div>
                             </div>
                         </div>
                     </div>
                     <div class="stats-footer">
-                        <p>Статистика обновляется в реальном времени</p>
+                        <p>Statistics update in real time</p>
                         <button id="refresh-stats-btn" class="btn-outline">
-                            <i class="fas fa-sync-alt"></i> Обновить статистику
+                            <i class="fas fa-sync-alt"></i> Refresh Statistics
                         </button>
                     </div>
                 </div>
@@ -91,16 +111,201 @@
         </main>
 
         <footer>
-            <p>Pet SSL &copy; 2026 | Сокращайте ссылки быстро и бесплатно</p>
+            <p>Pet SSL &copy; 2026 | Shorten URLs fast and free</p>
             <div class="footer-links">
                 <a href="/health" target="_blank"><i class="fas fa-heartbeat"></i> Health Check</a>
                 <a href="/api/v1/docs" target="_blank"><i class="fas fa-book"></i> API Docs</a>
-                <a href="https://github.com" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                <a href="https://github.com/bladsvytro" target="_blank"><i class="fab fa-github"></i> GitHub</a>
             </div>
+            <p class="author">Made by <a href="https://github.com/bladsvytro" target="_blank">Vladislav Naumov</a></p>
         </footer>
     </div>
 
     <div class="notification" id="notification"></div>
+
+    <!-- Модальное окно входа -->
+    <div id="login-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2><i class="fas fa-sign-in-alt"></i> Sign In</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Username or Email:</label>
+                    <input type="text" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password:</label>
+                    <input type="password" id="login-password" required minlength="8">
+                </div>
+                <button type="submit" class="btn-primary">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно регистрации -->
+    <div id="register-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2><i class="fas fa-user-plus"></i> Sign Up</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="register-name">Name:</label>
+                    <input type="text" id="register-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email:</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-username">Username (optional):</label>
+                    <input type="text" id="register-username">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password:</label>
+                    <input type="password" id="register-password" required minlength="8">
+                </div>
+                <button type="submit" class="btn-primary">Sign Up</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно админ-панели -->
+    <div id="admin-modal" class="modal" style="display: none;">
+        <div class="modal-content admin-modal-content">
+            <span class="close">&times;</span>
+            <h2><i class="fas fa-cogs"></i> Admin Panel</h2>
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="users">Users</button>
+                <button class="admin-tab" data-tab="links">Links</button>
+                <button class="admin-tab" data-tab="stats">Statistics</button>
+            </div>
+            <div class="admin-tab-content">
+                <!-- Вкладка пользователей -->
+                <div id="admin-users-tab" class="admin-tab-pane active">
+                    <h3><i class="fas fa-users"></i> User Management</h3>
+                    <div class="admin-actions">
+                        <button id="refresh-users-btn" class="btn-outline small">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button id="export-users-btn" class="btn-outline small">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Email</th>
+                                    <th>Username</th>
+                                    <th>Name</th>
+                                    <th>Registration Date</th>
+                                    <th>Admin</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-table">
+                                <tr><td colspan="7">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="admin-pagination">
+                        <button id="prev-users-btn" class="btn-outline small" disabled>Previous</button>
+                        <span id="users-page-info">Page 1</span>
+                        <button id="next-users-btn" class="btn-outline small" disabled>Next</button>
+                    </div>
+                </div>
+                <!-- Вкладка ссылок -->
+                <div id="admin-links-tab" class="admin-tab-pane">
+                    <h3><i class="fas fa-link"></i> All Links</h3>
+                    <div class="admin-actions">
+                        <button id="refresh-links-btn" class="btn-outline small">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button id="export-links-btn" class="btn-outline small">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Short Code</th>
+                                    <th>Original URL</th>
+                                    <th>User</th>
+                                    <th>Clicks</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-links-table">
+                                <tr><td colspan="7">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="admin-pagination">
+                        <button id="prev-links-btn" class="btn-outline small" disabled>Previous</button>
+                        <span id="links-page-info">Page 1</span>
+                        <button id="next-links-btn" class="btn-outline small" disabled>Next</button>
+                    </div>
+                </div>
+                <!-- Вкладка статистики -->
+                <div id="admin-stats-tab" class="admin-tab-pane">
+                    <h3><i class="fas fa-chart-pie"></i> System Statistics</h3>
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="admin-stat-info">
+                                <div class="admin-stat-value" id="admin-total-users">0</div>
+                                <div class="admin-stat-label">Total Users</div>
+                            </div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-icon">
+                                <i class="fas fa-link"></i>
+                            </div>
+                            <div class="admin-stat-info">
+                                <div class="admin-stat-value" id="admin-total-links">0</div>
+                                <div class="admin-stat-label">Total Links</div>
+                            </div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-icon">
+                                <i class="fas fa-mouse-pointer"></i>
+                            </div>
+                            <div class="admin-stat-info">
+                                <div class="admin-stat-value" id="admin-total-clicks">0</div>
+                                <div class="admin-stat-label">Total Clicks</div>
+                            </div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-icon">
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
+                            <div class="admin-stat-info">
+                                <div class="admin-stat-value" id="admin-today-clicks">0</div>
+                                <div class="admin-stat-label">Today's Clicks</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-chart-container">
+                        <canvas id="admin-chart"></canvas>
+                    </div>
+                    <div class="admin-actions">
+                        <button id="refresh-stats-btn" class="btn-primary">
+                            <i class="fas fa-sync-alt"></i> Refresh Statistics
+                        </button>
+                        <button id="export-stats-btn" class="btn-outline">
+                            <i class="fas fa-download"></i> Export Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="/static/app.js"></script>
 </body>

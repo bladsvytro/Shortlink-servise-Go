@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -120,6 +121,7 @@ func (a *Application) AdminMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func (a *Application) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email    string `json:"email"`
+		Username string `json:"username,omitempty"`
 		Password string `json:"password"`
 		Name     string `json:"name,omitempty"`
 	}
@@ -128,16 +130,28 @@ func (a *Application) handleRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	// Debug log
+	a.logger.Debug("Registration request", zap.String("email", req.Email), zap.String("username", req.Username), zap.String("name", req.Name))
+	// Also print to stdout for immediate visibility
+	fmt.Printf("[DEBUG] Registration: email=%s, username=%s, name=%s\n", req.Email, req.Username, req.Name)
 	// Validate
 	if req.Email == "" || req.Password == "" {
 		http.Error(w, "Email and password are required", http.StatusBadRequest)
 		return
 	}
-	// Check if user already exists
+	// Check if user already exists by email
 	var existingUser models.User
 	if err := a.db.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		http.Error(w, "User with this email already exists", http.StatusConflict)
 		return
+	}
+	// If username provided, check uniqueness
+	if req.Username != "" {
+		var existingByUsername models.User
+		if err := a.db.DB.Where("username = ?", req.Username).First(&existingByUsername).Error; err == nil {
+			http.Error(w, "Username already taken", http.StatusConflict)
+			return
+		}
 	}
 	// Hash password
 	hash, err := HashPassword(req.Password)
@@ -149,16 +163,20 @@ func (a *Application) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// Create user
 	user := models.User{
 		Email:        req.Email,
+		Username:     req.Username,
 		PasswordHash: hash,
 		Name:         req.Name,
 		IsActive:     true,
 		IsAdmin:      false,
 	}
+	a.logger.Debug("Creating user with username", zap.String("username", user.Username))
 	if err := a.db.DB.Create(&user).Error; err != nil {
 		a.logger.Error("Failed to create user", zap.Error(err))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+	a.logger.Debug("User created", zap.String("id", user.ID.String()), zap.String("username", user.Username))
+	fmt.Printf("[DEBUG] User created: id=%s, username='%s'\n", user.ID.String(), user.Username)
 	// Generate JWT token
 	token, err := GenerateJWT(&user, &a.config.Auth)
 	if err != nil {
@@ -171,9 +189,10 @@ func (a *Application) handleRegister(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"user": map[string]interface{}{
-			"id":    user.ID,
-			"email": user.Email,
-			"name":  user.Name,
+			"id":       user.ID,
+			"email":    user.Email,
+			"username": user.Username,
+			"name":     user.Name,
 		},
 		"token": token,
 	})
@@ -190,20 +209,30 @@ func (a *Application) handleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	// Find user
+	// Find user by email or username
 	var user models.User
+	// First try email
 	if err := a.db.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		// If not found by email, try username
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+			if err := a.db.DB.Where("username = ?", req.Email).First(&user).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					http.Error(w, "Invalid email/username or password", http.StatusUnauthorized)
+					return
+				}
+				a.logger.Error("Database error", zap.Error(err))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			a.logger.Error("Database error", zap.Error(err))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		a.logger.Error("Database error", zap.Error(err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
 	}
 	// Check password
 	if !CheckPasswordHash(req.Password, user.PasswordHash) {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		http.Error(w, "Invalid email/username or password", http.StatusUnauthorized)
 		return
 	}
 	// Update last login
@@ -221,9 +250,10 @@ func (a *Application) handleLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"user": map[string]interface{}{
-			"id":    user.ID,
-			"email": user.Email,
-			"name":  user.Name,
+			"id":       user.ID,
+			"email":    user.Email,
+			"username": user.Username,
+			"name":     user.Name,
 		},
 		"token": token,
 	})
@@ -245,6 +275,7 @@ func (a *Application) handleMe(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":         user.ID,
 		"email":      user.Email,
+		"username":   user.Username,
 		"name":       user.Name,
 		"is_active":  user.IsActive,
 		"is_admin":   user.IsAdmin,
